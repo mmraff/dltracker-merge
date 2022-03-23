@@ -1,0 +1,375 @@
+const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
+const util = require('util')
+const promisify = util.promisify || require('./simple-promisify')
+
+const expect = require('chai').expect
+const mkdirp = require('mkdirp')
+const mkdirpAsync = promisify(mkdirp)
+const rimraf = require('rimraf')
+const rimrafAsync = promisify(rimraf)
+const tar = require('tar')
+const createDlTracker = require('npm-package-dl-tracker').create
+const createDlTrackerAsync = promisify(createDlTracker)
+
+const mergeLib = require('../merge-lib')
+
+const MAPFILE_NAME = 'dltracker.json'
+const ASSETS_BASE = './test/assets' // TODO: is there a better way to spec this?
+const TEMPDIR_BASE = path.join(ASSETS_BASE, 'temp')
+const testDirs = [ 'tarballs', 'empty1', 'empty2', 'dir1', 'dir2', 'dir3' ]
+const srcDir = path.join(ASSETS_BASE, 'temp', testDirs[0])
+const origTarball = 'original.tgz'
+
+function evalJsonFile(filepath) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(filepath, 'utf8', (err, txt) => {
+      if (err) return reject(err)
+      // Strip BOM, if any
+      if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1)
+      let data
+      try { data = JSON.parse(txt) }
+      catch (err) { return reject(err) }
+      resolve(data)
+    })
+  })
+}
+
+function extractFilenames(trackerMap) {
+  const list = []
+  const semverMap = trackerMap.semver || {}
+  for (let name in semverMap) {
+    const versions = semverMap[name]
+    for (let ver in versions) {
+      if ('filename' in versions[ver])
+        list.push(versions[ver].filename)
+    }
+  }
+  const gitMap = trackerMap.git || {}
+  for (let repo in gitMap) {
+    const refs = gitMap[repo]
+    for (let ref in refs) {
+      if ('filename' in refs[ref])
+        list.push(refs[ref].filename)
+    }
+  }
+  const urlMap = trackerMap.url || {}
+  for (let spec in urlMap) {
+    if ('filename' in urlMap[spec])
+      list.push(urlMap[spec].filename)
+  }
+  return list
+}
+
+function recreateDir(dir) {
+  return new Promise((resolve, reject) => {
+    rimraf(dir, function(rmErr) {
+      if (rmErr) return reject(rmErr)
+      mkdirp(dir, function(mkErr) {
+        mkErr ? reject(mkErr) : resolve(null)
+      })
+    })
+  })
+}
+
+function copyFile(from, to) {
+  return new Promise((resolve, reject) => {
+    var hadError = false
+    function errorOut(err) {
+      hadError = true
+      reject(err)
+    }
+    fs.createReadStream(from)
+    .once('error', errorOut)
+    .pipe(fs.createWriteStream(to, {encoding: null}))
+    .once('error', errorOut)
+    .once('close', function () {
+      if (!hadError) resolve(null)
+    })
+  })
+}
+
+function mockAllDownloads(list, idx, where) {
+  if (idx >= list.length) return Promise.resolve(null)
+  const src = path.join(srcDir, origTarball)
+  const target = path.join(where, list[idx])
+  return copyFile(src, target)
+  .then(() => mockAllDownloads(list, idx+1, where))
+}
+
+function configureTestDir(dir, jsonFile, recreate) {
+  const srcPath = path.join(ASSETS_BASE, 'json', jsonFile)
+  return Promise.resolve(recreate ? recreateDir(dir) : null)
+  .then(() => evalJsonFile(srcPath))
+  .then(pkgMap => {
+    return Promise.resolve(extractFilenames(pkgMap))
+    .then(fileList => mockAllDownloads(fileList, 0, dir))
+    .then(() => copyFile(srcPath, path.join(dir, MAPFILE_NAME)))
+    .then(() => pkgMap)
+  })
+}
+
+describe('dltracker-merge library internal functions', function() {
+  const fileList1 = []
+
+  before('make clean directories and generate source tarballs', function(done) {
+    const dummyContentPath = path.join(ASSETS_BASE, 'package')
+    const tarball1Path = path.join(srcDir, origTarball)
+    const allGoodJson = path.join(ASSETS_BASE, 'json', 'dltracker_ALL_GOOD.json')
+  
+    rimrafAsync(TEMPDIR_BASE)
+    .then(() => mkdirpAsync(TEMPDIR_BASE))
+    .then(() => nextTempDir(0))
+    .then(() => {
+      tar.c(
+        { gzip: true, file: tarball1Path }, [ dummyContentPath ]
+      )
+      .then(() => evalJsonFile(allGoodJson))
+      .then(map => extractFilenames(map))
+      .then(list => {
+        fileList1.splice(0, 0, ...list)
+        return createOtherTarballs(0, list)
+      })
+      .catch(err => done(err))
+    })
+  
+    function nextTempDir(i) {
+      if (i >= testDirs.length) return Promise.resolve(null)
+      const dirPath = path.join(TEMPDIR_BASE, testDirs[i])
+      return mkdirpAsync(dirPath).then(() => nextTempDir(i+1))
+    }
+
+    // This fills srcDir with tarballs for every filename in filenames
+    // (every one is just a copy of the first)
+    function createOtherTarballs(idx, filenames) {
+      if (idx >= filenames.length) return Promise.resolve(done())
+      const tgtPath = path.join(srcDir, filenames[idx])
+      return copyFile(tarball1Path, tgtPath)
+      .then(() => createOtherTarballs(idx+1, filenames))
+    }
+  })
+
+  after('remove temporary directories', function(done) {
+    rimraf(path.join(ASSETS_BASE, 'temp'), function(err) {
+      done(err)
+    })
+  })
+
+  const emptyArgs   = [ undefined, null, '' ]
+  const notStrings = [ 42, true, {}, [] ]
+  const notArrays  = [ 42, true, {}, 'example' ]
+  const notSimpleObjects = [ 42, true, 'example', [], new Date() ]
+  const notFunctions = [ 42, true, 'example', {}, [] ]
+  const didNotError = new Error('Expected rejection failed to happen')
+
+  function dummyFunc(err, data) {
+    assert(false, 'This dummy function should never get called!')
+  }
+
+  const emptyPath1 = path.join(TEMPDIR_BASE, 'empty1')
+  const emptyPath2 = path.join(TEMPDIR_BASE, 'empty2')
+  const path1 = path.join(TEMPDIR_BASE, 'dir1')
+  const path2 = path.join(TEMPDIR_BASE, 'dir2')
+  const path3 = path.join(TEMPDIR_BASE, 'dir3')
+
+  describe('initialize()', function() {
+
+    it('should reject for a non-existent directory in first 2 arguments', function(done) {
+      const noSuchPath1 = path.join(TEMPDIR_BASE, 'noSuch1')
+      const noSuchPath2 = path.join(TEMPDIR_BASE, 'noSuch2')
+
+      mergeLib.initialize([ noSuchPath1, noSuchPath2 ])
+      .catch(err => {
+        expect(err.code).to.equal('ENOENT')
+        return mergeLib.initialize([ path3, noSuchPath2 ])
+      })
+      .catch(err => {
+        expect(err.code).to.equal('ENOENT')
+        return mergeLib.initialize([ noSuchPath1, path3 ])
+      })
+      .then(() => done(didNotError))
+      .catch(err => {
+        expect(err.code).to.equal('ENOENT')
+        done()
+      })
+      .catch(err => done(err)) // AssertionError from failed expect()
+    })
+
+    it('should pass back a dlTracker for the last directory given', function(done) {
+      // At this point, these directories are empty. Meaningless, but OK.
+
+      mergeLib.initialize([ path1, path2 ])
+      .then(tracker => {
+        // TODO: neither of these assertions will be needed for merge
+        expect(tracker).to.be.an('object').that.has.property('path')
+        expect(path.resolve(tracker.path)).to.equal(path.resolve(path2))
+      })
+      .then(() => mergeLib.initialize([ path1, path2, path3 ]))
+      .then(tracker => {
+        // TODO: ditto the above
+        expect(tracker).to.be.an('object').that.has.property('path')
+        expect(path.resolve(tracker.path)).to.equal(path.resolve(path3))
+        done()
+      })
+      .catch(err => done(err))
+    })
+
+    it("should create the last (at least 3rd) directory if it doesn't exist yet", function(done) {
+      rimraf(path3, function(err) {
+        if (err) return done(err)
+        mergeLib.initialize([ path1, path2, path3 ])
+        .then(tracker => {
+          // TODO: ditto the above
+          expect(tracker).to.be.an('object').that.has.property('path')
+          expect(path.resolve(tracker.path)).to.equal(path.resolve(path3))
+          done()
+        })
+        .catch(err => done(err))
+      })
+    })
+  })
+
+  describe('getTrackerMap()', function() {
+    // Here we put tarballs in a directory, but no dltracker.json; thus we
+    // induce the reconstruction of a package map by calling getTrackerMap
+    // on the mapless directory.
+    it('should give a reconstructed map for a directory with no JSON file', function(done) {
+      mockAllDownloads(fileList1, 0, path1)
+      .then(() => mergeLib.getTrackerMap(path1))
+      .then(mapData => {
+        const resultList = extractFilenames(mapData)
+        expect(resultList.length).to.equal(fileList1.length)
+        expect(resultList).to.have.members(fileList1)
+        done()
+      })
+      .catch(err => done(err))
+    })
+
+    it('should give the exact same data as what went into the JSON file', function(done) {
+      const srcFilePath = path.join(ASSETS_BASE, 'json', 'dltracker_ALL_GOOD.json')
+      const tgtFilePath = path.join(path1, MAPFILE_NAME)
+      evalJsonFile(srcFilePath).then(origData => {
+        return promisify(fs.writeFile)(tgtFilePath, JSON.stringify(origData))
+        .then(() => mergeLib.getTrackerMap(path1))
+        .then(newData => {
+          expect(newData).to.deep.equal(origData)
+          done()
+        })
+        .catch(err => done(err))
+      })
+    })
+  })
+
+  describe('mergedDataCollection()', function() {
+    it('should resolve to an empty array for two empty directories', function(done) {
+      createDlTrackerAsync(emptyPath2)
+      .then(tracker => mergeLib.mergedDataCollection(emptyPath1, tracker))
+      .then(results => {
+        expect(results).to.be.an('array').that.is.empty
+        done()
+      })
+      .catch(err => done(err))
+    })
+
+    it('should resolve to all data for the 1st dir when the tracker dir is empty', function(done) {
+      configureTestDir(path1, 'dltracker_ALL_GOOD.json')
+      .then(() => createDlTrackerAsync(emptyPath2))
+      .then(tgtTracker => mergeLib.mergedDataCollection(path1, tgtTracker))
+      .then(results => {
+        expect(results).to.be.an('array').that.is.not.empty
+        createDlTrackerAsync(path1)
+        .then(srcTracker => {
+          for (let i = 0; i < results.length; ++i) {
+            const el = results[i]
+            const name = el.name || el.repo
+            const spec = el.spec || el.version || el.commit
+            const srcData = srcTracker.getData(el.type, name, spec)
+            // The merge data of a tag record does not include the extra data
+            // stored for the corresponding semver record.
+            // That would be redundant, and lead to unnecessary data overwrite.
+            if (el.type != 'tag')
+              expect(el).to.deep.equal(srcData)
+            else {
+              expect(el.type).to.equal(srcData.type)
+              expect(el.name).to.equal(srcData.name)
+              expect(el.spec).to.equal(srcData.spec)
+              expect(el.version).to.equal(srcData.version)
+            }
+          }
+          done()
+        })
+      })
+      .catch(err => done(err))
+    })
+
+    it('should resolve to the union of data from 2 tracker dirs that are disjoint', function(done) {
+      configureTestDir(path1, 'dltracker_DISTINCT_1.json', true)
+      .then(() => configureTestDir(path2, 'dltracker_DISTINCT_2.json'))
+      .then(() => createDlTrackerAsync(path2))
+      .then(tracker2 => {
+        return mergeLib.mergedDataCollection(path1, tracker2)
+        .then(results => {
+          expect(results).to.be.an('array').that.is.not.empty
+          return createDlTrackerAsync(path1)
+          .then(tracker1 => {
+            for (let i = 0; i < results.length; ++i) {
+              const el = results[i]
+              const name = el.name || el.repo
+              const spec = el.spec || el.version || el.commit
+              const src1 = tracker1.getData(el.type, name, spec)
+              const src2 = tracker2.getData(el.type, name, spec)
+              if (src1) expect(src2).to.be.undefined
+              if (src2) expect(src1).to.be.undefined
+              const srcData = src1 || src2
+              if (el.type != 'tag')
+                expect(el).to.deep.equal(srcData)
+              else {
+                expect(el.type).to.equal(srcData.type)
+                expect(el.name).to.equal(srcData.name)
+                expect(el.spec).to.equal(srcData.spec)
+                expect(el.version).to.equal(srcData.version)
+              }
+            }
+            done()
+          })
+        })
+      })
+      .catch(err => done(err))
+    })
+
+    it('should resolve to the union of data from 2 tracker dirs that are not disjoint', function(done) {
+      configureTestDir(path1, 'dltracker_DISTINCT_1.json', true)
+      .then(() => configureTestDir(path2, 'dltracker_OVERLAP_1.json', true))
+      .then(() => createDlTrackerAsync(path2))
+      .then(tracker2 => {
+        return mergeLib.mergedDataCollection(path1, tracker2)
+        .then(results => {
+          expect(results).to.be.an('array').that.is.not.empty
+          return createDlTrackerAsync(path1)
+          .then(tracker1 => {
+            for (let i = 0; i < results.length; ++i) {
+              const el = results[i]
+              const name = el.name || el.repo
+              const spec = el.spec || el.version || el.commit
+              const src1 = tracker1.getData(el.type, name, spec)
+              const src2 = tracker2.getData(el.type, name, spec)
+              const srcData = src1 || src2
+              if (el.type != 'tag')
+                expect(el).to.deep.equal(srcData)
+              else {
+                expect(el.type).to.equal(srcData.type)
+                expect(el.name).to.equal(srcData.name)
+                expect(el.spec).to.equal(srcData.spec)
+                expect(el.version).to.equal(srcData.version)
+              }
+            }
+            done()
+          })
+        })
+      })
+      .catch(err => done(err))
+    })
+
+  })
+})

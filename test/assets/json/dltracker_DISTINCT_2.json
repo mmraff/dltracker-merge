@@ -1,0 +1,43 @@
+{
+  "git": {
+    "bitbucket.com/bbUser/example2": {
+      "fedcba9876543210fedcba9876543210fedcba98": {
+        "_resolved": "git://bitbucket.com/bbUser/example2.git#fedcba9876543210fedcba9876543210fedcba98",
+        "filename": "bitbucket.com%2FbbUser%2Fexample2%23fedcba9876543210fedcba9876543210fedcba98.tar.gz",
+        "refs": [ "v2.2.2", "master" ]
+      },
+      "master": {
+        "commit": "fedcba9876543210fedcba9876543210fedcba98"
+      },
+      "v2.2.2": {
+        "commit": "fedcba9876543210fedcba9876543210fedcba98"
+      }
+    }
+  },
+  "semver": {
+    "dummyA": {
+      "1.2.3": {
+        "filename": "dummyA-1.2.3.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyA/-/dummyA-1.2.3.tgz"
+      }
+    },
+    "dummyB": {
+      "0.1.2": {
+        "filename": "dummyB-0.1.2.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyB/-/dummyB-0.1.2.tgz"
+      }
+    }
+  },
+  "tag": {
+    "dummyB": {
+      "experimental": {
+        "version": "0.1.2"
+      }
+    }
+  },
+  "url": {
+    "somewhere.org/someuser/someproj/history/abcdef.tgz": {
+      "filename": "somewhere.org%2Fsomeuser%2Fsomeproj%2Fhistory%2Fabcdef.tgz"
+    }
+  }
+}

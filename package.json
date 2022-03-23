@@ -1,0 +1,41 @@
+{
+  "name": "dltracker-merge",
+  "version": "1.0.0",
+  "description": "Merge directories of packages obtained by `npm download`",
+  "license": "MIT",
+  "author": {
+    "name": "Matthew Rafferty",
+    "email": "mmraff@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mmraff/dltracker-merge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mmraff/dltracker-merge/issues"
+  },
+  "main": "merge-cli.js",
+  "bin": {
+    "dltmerge": "./merge-cli.js"
+  },
+  "files": [
+    "file-tools.js",
+    "merge-lib.js",
+    "simple-promisify.js"
+  ],
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "commander": "^6.2.1",
+    "graceful-fs": "^4.2.3",
+    "mkdirp": "^0.5.1",
+    "npm-package-dl-tracker": "^1.1.1",
+    "rimraf": "^2.6.3"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "mocha": "^7.2",
+    "tar": "^4.4.13"
+  }
+}

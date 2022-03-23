@@ -1,0 +1,36 @@
+{
+  "git": {
+    "gitlab.com/glUser/example3": {
+      "abcdef0123456789fedcba0123456789abcdef98": {
+        "_resolved": "git://gitlab.com/glUser/example3.git#abcdef0123456789fedcba0123456789abcdef98",
+        "filename": "gitlab.com%2FglUser%2Fexample3%23abcdef0123456789fedcba0123456789abcdef98.tar.gz",
+        "refs": [ "master" ]
+      },
+      "master": {
+        "commit": "abcdef0123456789fedcba0123456789abcdef98"
+      }
+    }
+  },
+  "semver": {
+    "dummyA": {
+      "0.1.2": {
+        "filename": "dummyA-0.1.2.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyA/-/dummyA-0.1.2.tgz"
+      }
+    },
+    "dummyC": {
+      "3.4.5": {
+        "filename": "dummyC-3.4.5.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyC/-/dummyC-3.4.5.tgz"
+      }
+    }
+  },
+  "url": {
+    "somewhere.org/someuser/someproj/history/abcdef.tgz": {
+      "filename": "somewhere.org%2Fsomeuser%2Fsomeproj%2Fhistory%2Fabcdef.tgz"
+    },
+    "dark.net/darkuser/darkproj/01234567.tgz": {
+      "filename": "dark.net%2Fdarkuser%2Fdarkproj%2F01234567.tgz"
+    }
+  }
+}

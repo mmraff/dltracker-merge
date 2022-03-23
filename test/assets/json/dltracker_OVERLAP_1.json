@@ -1,0 +1,40 @@
+{
+  "git": {
+    "github.com/ghUser/example1": {
+      "fedcba9876543210fedcba9876543210fedcba98": {
+        "_resolved": "git://github.com/ghUser/example1.git#fedcba9876543210fedcba9876543210fedcba98",
+        "filename": "github.com%2FghUser%2Fexample1%23fedcba9876543210fedcba9876543210fedcba98.tar.gz",
+        "refs": [ "v2.2.2" ]
+      },
+      "v2.2.2": {
+        "commit": "fedcba9876543210fedcba9876543210fedcba98"
+      }
+    }
+  },
+  "semver": {
+    "dummyA": {
+      "1.2.3": {
+        "filename": "dummyA-1.2.3.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyA/-/dummyA-1.2.3.tgz"
+      }
+    },
+    "dummyB": {
+      "1.2.3": {
+        "filename": "dummyB-1.2.3.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyB/-/dummyB-1.2.3.tgz"
+      }
+    }
+  },
+  "tag": {
+    "dummyB": {
+      "beta-108": {
+        "version": "1.2.3"
+      }
+    }
+  },
+  "url": {
+    "somewhere.org/someuser/someproj/history/abcdef.tgz": {
+      "filename": "somewhere.org%2Fsomeuser%2Fsomeproj%2Fhistory%2Fabcdef.tgz"
+    }
+  }
+}

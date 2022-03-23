@@ -1,0 +1,94 @@
+{
+  "git": {
+    "github.com/ghUser/example1": {
+      "0123456789abcdef0123456789abcdef01234567": {
+        "_resolved": "git://github.com/ghUser/example1.git#0123456789abcdef0123456789abcdef01234567",
+        "filename": "github.com%2FghUser%2Fexample1%230123456789abcdef0123456789abcdef01234567.tar.gz",
+        "refs": [ "v1.1.1", "main" ]
+      },
+      "main": {
+        "commit": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "v1.1.1": {
+        "commit": "0123456789abcdef0123456789abcdef01234567"
+      }
+    },
+    "bitbucket.com/bbUser/example2": {
+      "fedcba9876543210fedcba9876543210fedcba98": {
+        "_resolved": "git://bitbucket.com/bbUser/example2.git#fedcba9876543210fedcba9876543210fedcba98",
+        "filename": "bitbucket.com%2FbbUser%2Fexample2%23fedcba9876543210fedcba9876543210fedcba98.tar.gz",
+        "refs": [ "v2.2.2", "master" ]
+      },
+      "master": {
+        "commit": "fedcba9876543210fedcba9876543210fedcba98"
+      },
+      "v2.2.2": {
+        "commit": "fedcba9876543210fedcba9876543210fedcba98"
+      }
+    },
+    "gitlab.com/glUser/example3": {
+      "abcdef0123456789fedcba0123456789abcdef98": {
+        "_resolved": "git://gitlab.com/glUser/example3.git#abcdef0123456789fedcba0123456789abcdef98",
+        "filename": "gitlab.com%2FglUser%2Fexample3%23abcdef0123456789fedcba0123456789abcdef98.tar.gz",
+        "refs": [ "master" ]
+      },
+      "master": {
+        "commit": "abcdef0123456789fedcba0123456789abcdef98"
+      }
+    }
+  },
+  "semver": {
+    "dummyA": {
+      "0.1.2": {
+        "filename": "dummyA-0.1.2.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyA/-/dummyA-0.1.2.tgz"
+      },
+      "1.2.3": {
+        "filename": "dummyA-1.2.3.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyA/-/dummyA-1.2.3.tgz"
+      }
+    },
+    "dummyB": {
+      "0.1.2": {
+        "filename": "dummyB-0.1.2.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyB/-/dummyB-0.1.2.tgz"
+      },
+      "1.2.3": {
+        "filename": "dummyB-1.2.3.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyB/-/dummyB-1.2.3.tgz"
+      }
+    },
+    "dummyC": {
+      "3.4.5": {
+        "filename": "dummyC-3.4.5.tar.gz",
+        "_resolved": "https://registry.npmjs.org/dummyC/-/dummyC-3.4.5.tgz"
+      }
+    }
+  },
+  "tag": {
+    "dummyA": {
+      "alpha-9.9.9": {
+        "version": "0.1.2"
+      }
+    },
+    "dummyB": {
+      "experimental": {
+        "version": "0.1.2"
+      },
+      "beta-108": {
+        "version": "1.2.3"
+      }
+    }
+  },
+  "url": {
+    "example.com/exampleuser/example/archive/5559999.tgz": {
+      "filename": "example.com%2Fexampleuser%2Fexample%2Farchive%2F5559999.tgz"
+    },
+    "somewhere.org/someuser/someproj/history/abcdef.tgz": {
+      "filename": "somewhere.org%2Fsomeuser%2Fsomeproj%2Fhistory%2Fabcdef.tgz"
+    },
+    "dark.net/darkuser/darkproj/01234567.tgz": {
+      "filename": "dark.net%2Fdarkuser%2Fdarkproj%2F01234567.tgz"
+    }
+  }
+}
