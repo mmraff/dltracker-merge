@@ -15,7 +15,7 @@ Manually moving files from one directory to another does not solve the problem, 
 
 This module provides a command to reduce package redundancy without losing anything, by merging directories of packages and the JSON files that govern them.
 
-**Caveat:** merging download directories can lead to a directory of thousands of packages, which can result in degraded installation performance. Whether by merging or by downloading, collecting multiple thousands of packages in one directory is discouraged. Moderation is encouraged.
+**Warning:** merging download directories can lead to a directory of thousands of packages, which can result in degraded installation performance. Whether by merging or by downloading, collecting multiple thousands of packages in one directory is discouraged. Moderation is encouraged.
 
 ## To Install
 
