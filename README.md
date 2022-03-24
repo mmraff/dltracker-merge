@@ -54,22 +54,30 @@ $ dltmerge --version
 ```
 
 ## Library Module API
-**merge-lib.js** exposes only one function.
+**merge-lib.js** exposes only a function and a message emitter.
 
 ```js
-const dltMerge = require('dltracker-merge/merge-lib').merge
+const mergeLib = require('dltracker-merge/merge-lib')
+
+mergeLib.emitter.on('msg', (level, message) => {
+  // Maybe test level, then do something with message...
+})
 
 const directories = ['path1', 'path2', 'path/to/destination'];
-dltMerge(directories)
-  .then(() => {
-    const sources = directories.slice(0, -1)
-    const dest = directories.slice(-1)
-    console.log(`Successfully merged contents of ${sources.join(', ')} into ${dest}`)
-  })
+mergeLib.merge(directories)
+.then(() => {
+  const sources = directories.slice(0, -1)
+  const dest = directories.slice(-1)
+  console.log(`Successfully merged contents of ${sources.join(', ')} into ${dest}`)
+})
 ```
+### `mergeLib.emitter` {events.EventEmitter}
+A single event `'msg'` is implemented. The handler is passed two arguments:
+* `level` {string} One of `'info'`|`'warn'`
+* `message` {string} A report of the current point in the program activity
 
-### `merge(directories[, options])` &rarr; `Promise<empty>`
-* `directories` {Array} Paths to two or more directories. The bulleted statements in CLI Usage above apply the same here.
+### `mergeLib.merge(directories[, options])` &rarr; `Promise<empty>`
+* `directories` {Array&lt;string&gt;} Paths to two or more directories. The bulleted statements in CLI Usage above apply the same here.
 * `options` {object} *Optional* A hash of option settings. Currently supported properties:
   - `move` {boolean} Move rather than copy files. Default `false`.
 
