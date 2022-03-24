@@ -376,6 +376,30 @@ describe('dltracker-merge library module', function() {
       .catch(err => done(err))
     })
 
+    it('should reject when given a duplicate path', function(done) {
+      const dirs = ['path1', 'path2', 'path3', 'path1']
+      mergeLib.merge(dirs).then(() => done(didNotError))
+      .catch(err => {
+        expect(err).to.be.an.instanceof(SyntaxError)
+        done()
+      })
+      .catch(err => done(err)) // AssertionError from expect()
+    })
+
+    it('should reject when given a path that resolves to a duplicate', function(done) {
+      const dirs = [
+        'path1', 'path2',
+        path.join('..', path.basename(process.cwd()), 'path1'),
+        'path3'
+      ]
+      mergeLib.merge(dirs).then(() => done(didNotError))
+      .catch(err => {
+        expect(err).to.be.an.instanceof(SyntaxError)
+        done()
+      })
+      .catch(err => done(err)) // AssertionError from expect()
+    })
+
     it('should reject when given wrong type for opts', function(done) {
       function nextBadOpts(i) {
         if (i >= notSimpleObjects.length) return Promise.resolve(null)

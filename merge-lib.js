@@ -42,14 +42,24 @@ function merge(args, cfg) {
     err = new TypeError(arg1ErrorMsg)
   else if (args.length < 2)
     err = new SyntaxError("At least two paths are required")
-  else
+  else {
+    const dirsSoFar = new Set()
     for (let i = 0; i < args.length; ++i) {
       const elType = typeof args[i]
       if (elType != 'string') {
         err = new TypeError(`Path arguments must be strings; ${elType} found`)
         break
       }
+      // There are multiple ways to represent a path;
+      // to catch a duplicate, we must always resolve:
+      const item = path.resolve(args[i])
+      if (dirsSoFar.has(item)) {
+        err = new SyntaxError(`Duplicate path in arguments: ${args[i]}`)
+        break
+      }
+      dirsSoFar.add(item)
     }
+  }
   cfg = cfg || {}
   if (!err) {
     if (typeof cfg != 'object')
