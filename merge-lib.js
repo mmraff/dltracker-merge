@@ -194,11 +194,11 @@ function transferAll(dir, tracker, cfg) {
       if (data.type == 'tag') return nextTagRecord(i)
 
       const srcPath = path.join(dir, data.filename)
-      emitter.emit('msg', 'info', `${xferWord} ${data.filename} from ${dir} to ${tracker.path}`)
+      emitter.emit('msg', 'info', `${xferWord} ${data.filename} from ${dir} ...`)
       return xferFunc(srcPath, tracker.path)
       .catch(err => {
         if (err.code != 'EEXIST') throw err
-        emitter.emit('msg', 'warn', `${data.filename} already exists at ${tracker.path}`)
+        emitter.emit('msg', 'warn', `${data.filename} already exists at destination`)
       })
       .then(() => trackerAddAsync(data.type, data))
       .then(() => nextCoreRecord(i+1))
@@ -215,6 +215,7 @@ function transferAll(dir, tracker, cfg) {
       .then(() => nextTagRecord(i+1))
     }
 
+    emitter.emit('msg', 'info', `Destination path is ${tracker.path}`)
     return nextCoreRecord(0)
   })
 }
