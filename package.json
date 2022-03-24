@@ -14,13 +14,12 @@
   "bugs": {
     "url": "https://github.com/mmraff/dltracker-merge/issues"
   },
-  "main": "merge-cli.js",
+  "main": "merge-lib.js",
   "bin": {
-    "dltmerge": "./merge-cli.js"
+    "dltmerge": "./dltmerge.js"
   },
   "files": [
     "file-tools.js",
-    "merge-lib.js",
     "simple-promisify.js"
   ],
   "scripts": {
