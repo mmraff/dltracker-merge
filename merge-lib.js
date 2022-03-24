@@ -1,3 +1,4 @@
+const Emitter = require('events')
 const path = require('path')
 const util = require('util')
 const promisify = util.promisify || require('./simple-promisify')
@@ -22,6 +23,8 @@ const log = DEBUG ? {
   error: function() {},
   info: function() {}
 }
+
+const emitter = new Emitter()
 
 /*
 * MV semantics will be an option; CP semantics will be the default
@@ -70,13 +73,19 @@ function merge(args, cfg) {
       return transferAll(args[i], tracker, cfg)
       .then(() => nextDirXfer(i + 1))
     }
-    return nextDirXfer(0).then(() => promisify(tracker.serialize)())
+    return nextDirXfer(0).then(() => {
+      emitter.emit('msg', 'info',
+        `Writing tracker data at ${tracker.path} ...`
+      )
+      return promisify(tracker.serialize)()
+    })
   })
   .then(() => {
     if (!cfg.move) return null
 
     function nextDirDel(i) {
       if (i >= srcCount) return null
+      emitter.emit('msg', 'info', `Removing directory ${args[i]} ...`)
       return rimrafAsync(args[i]).then(() => nextDirDel(i+1))
     }
     return nextDirDel(0)
@@ -113,6 +122,7 @@ function initialize(args) {
     if (lastTracker) return Promise.resolve(lastTracker)
     // else the last directory doesn't exist yet.
     const lastDir = args[args.length - 1]
+    emitter.emit('msg', 'warn', `Need to create path: ${lastDir}`)
     return new Promise((resolve, reject) => {
       mkdirp(lastDir, function(err) {
         if (err) return reject(err)
@@ -134,13 +144,17 @@ function validateDir(dirPath) {
   return ndtCreateAsync(dirPath)
   .then(tracker => {
     return new Promise((resolve, reject) => {
-      fs.access(path.join(dirPath, 'dltracker.json'), function(err) {
+      fs.access(path.join(dirPath, MAPFILENAME), function(err) {
         // There's no point in running an audit if the tracker was not loaded
         // from a map file.
         // err will be ENOENT. A more serious error would have been identified
         // by ndt.create().
-        if (err) return resolve(tracker)
+        if (err) {
+          emitter.emit('msg', 'warn', `No ${MAPFILENAME} found at ${dirPath}`)
+          return resolve(tracker)
+        }
 
+        emitter.emit('msg', 'info', `Running audit on tracker for ${dirPath} ...`)
         tracker.audit((err, data) => {
           if (err) return reject(err)
           if (data.length) {
@@ -161,6 +175,8 @@ function validateDir(dirPath) {
 // Called by merge
 function transferAll(dir, tracker, cfg) {
   const trackerAddAsync = promisify(tracker.add)
+  const xferFunc = cfg.move ? ft.mv : ft.copyFile
+  const xferWord = cfg.move ? 'Moving' : 'Copying'
   return mergedDataCollection(dir, tracker).then(list => {
     function nextCoreRecord(i) {
       if (i >= list.length) return Promise.resolve(null)
@@ -168,10 +184,11 @@ function transferAll(dir, tracker, cfg) {
       if (data.type == 'tag') return nextTagRecord(i)
 
       const srcPath = path.join(dir, data.filename)
-      const xferFunc = cfg.move ? ft.mv : ft.copyFile
+      emitter.emit('msg', 'info', `${xferWord} ${data.filename} from ${dir} to ${tracker.path}`)
       return xferFunc(srcPath, tracker.path)
       .catch(err => {
         if (err.code != 'EEXIST') throw err
+        emitter.emit('msg', 'warn', `${data.filename} already exists at ${tracker.path}`)
       })
       .then(() => trackerAddAsync(data.type, data))
       .then(() => nextCoreRecord(i+1))
@@ -256,12 +273,14 @@ function getTrackerMap(dir) {
   return new Promise((resolve, reject) => {
     fs.readFile(path.join(dir, MAPFILENAME), 'utf8', (err, txt) => {
       if (err) {
-        return err.code == 'ENOENT' ?
-          reconstructMap(dir, function(err, mapData) {
+        if (err.code == 'ENOENT') {
+          emitter.emit('msg', 'warn', `Need to reconstruct map of packages at ${dir}`)
+          return reconstructMap(dir, function(err, mapData) {
             if (err) return reject(err)
             resolve(mapData)
           })
-          : reject(err)
+        }
+        return reject(err)
       }
       // Strip BOM, if any
       if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1)
@@ -316,5 +335,6 @@ module.exports = {
   mergedData: mergedData,
   mergedDataCollection: mergedDataCollection,
 */
+  emitter: emitter,
   merge: merge
 }
