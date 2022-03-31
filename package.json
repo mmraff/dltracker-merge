@@ -1,6 +1,6 @@
 {
   "name": "dltracker-merge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Merge directories of packages obtained by `npm download`",
   "license": "MIT",
   "author": {
