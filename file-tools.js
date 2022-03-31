@@ -62,7 +62,7 @@ function copyFile(src, dest) {
         if (!srcStream._readableState.ended)
           closeStream(srcStream, function(closeErr) {
             if (closeErr)
-              log.warn('copyFile', 'And then failed to close source stream!')
+              log.error('copyFile', 'And then failed to close source stream!')
           })
         errorOut(err)
       })
